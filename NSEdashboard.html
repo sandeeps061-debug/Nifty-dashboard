@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>NSE Dashboard</title>
+  <meta http-equiv="refresh" content="60"> <!-- Auto-refresh every 60s -->
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+    .panel { flex: 1; border: 1px solid #ccc; display: flex; flex-direction: column; }
+    .panel h2 { margin: 0; padding: 10px; background: #f4f4f4; text-align: center; }
+    .content { flex: 1; padding: 10px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: center; }
+    th { background: #eee; position: sticky; top: 0; }
+    .bullish-row { background-color: #e6ffe6; }
+    .bearish-row { background-color: #ffe6e6; }
+    .index-positive { background-color: #e6ffe6; }
+    .index-negative { background-color: #ffe6e6; }
+    #searchBox { width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <!-- Index Panel -->
+  <div class="panel">
+    <h2>📊 Index Trends (Live)</h2>
+    <div class="content">
+      <table id="indexTable">
+        <tr><th>Index</th><th>Price</th><th>Change</th><th>% Change</th></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- NIFTY 500 Panel -->
+  <div class="panel">
+    <h2>📋 NIFTY 500 Stocks (Live)</h2>
+    <div class="content">
+      <input type="text" id="searchBox" placeholder="🔍 Search stock..." onkeyup="filterTable()">
+      <table id="nifty500Table">
+        <tr><th>Stock</th><th>Price</th><th>Change</th><th>% Change</th></tr>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function loadIndex(symbol, url) {
+      const response = await fetch(url);
+      const data = await response.json();
+      const table = document.getElementById("indexTable");
+      const row = document.createElement("tr");
+      row.classList.add(data.change >= 0 ? "index-positive" : "index-negative");
+      row.innerHTML = `<td>${symbol}</td><td>${data.lastPrice}</td><td>${data.change}</td><td>${data.pChange}%</td>`;
+      table.appendChild(row);
+    }
+
+    async function loadNifty500() {
+      const response = await fetch("https://indian-stock-market-api.vercel.app/nse/NIFTY%20500");
+      const data = await response.json();
+      const table = document.getElementById("nifty500Table");
+      table.innerHTML = "<tr><th>Stock</th><th>Price</th><th>Change</th><th>% Change</th></tr>";
+      data.forEach(stock => {
+        const row = document.createElement("tr");
+        row.classList.add(stock.change >= 0 ? "bullish-row" : "bearish-row");
+        row.innerHTML = `<td>${stock.symbol}</td><td>${stock.lastPrice}</td><td>${stock.change}</td><td>${stock.pChange}%</td>`;
+        table.appendChild(row);
+      });
+    }
+
+    function filterTable() {
+      const input = document.getElementById("searchBox").value.toUpperCase();
+      const table = document.getElementById("nifty500Table");
+      const rows = table.getElementsByTagName("tr");
+      for (let i = 1; i < rows.length; i++) {
+        const cell = rows[i].getElementsByTagName("td")[0];
+        if (cell) {
+          const txtValue = cell.textContent || cell.innerText;
+          rows[i].style.display = txtValue.toUpperCase().indexOf(input) > -1 ? "" : "none";
+        }
+      }
+    }
+
+    // Load indices
+    loadIndex("NIFTY 50", "https://indian-stock-market-api.vercel.app/nse/NIFTY%2050");
+    loadIndex("BankNIFTY", "https://indian-stock-market-api.vercel.app/nse/NIFTY%20BANK");
+
+    // Load full NIFTY 500
+    loadNifty500();
+  </script>
+</body>
+</html>
